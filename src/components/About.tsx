@@ -1,66 +1,55 @@
 import React from 'react';
-import { Github, Linkedin, Twitter } from 'lucide-react';
-
-const teamMembers = [
-  { name: 'John Doe', role: 'Founder & CEO', avatar: '/avatars/john-doe.png', bio: 'John is a passionate developer with a love for building amazing products.', social: { github: '#', linkedin: '#', twitter: '#' } },
-  { name: 'Jane Smith', role: 'Lead Designer', avatar: '/avatars/jane-smith.png', bio: 'Jane has a keen eye for design and creates beautiful, user-friendly interfaces.', social: { github: '#', linkedin: '#', twitter: '#' } },
-  { name: 'Sam Wilson', role: 'Head of Content', avatar: '/avatars/sam-wilson.png', bio: 'Sam is a master storyteller, crafting compelling content for our users.', social: { github: '#', linkedin: '#', twitter: '#' } },
-];
-
-const techStack = ['React', 'TypeScript', 'Tailwind CSS', 'Node.js', 'Express', 'MongoDB'];
+import { Building, Users, Code, Target } from 'lucide-react';
 
 const About: React.FC = () => {
   return (
-    <div className="bg-white dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        
-        {/* Introduction */}
+    <div className="bg-white dark:bg-gray-900 py-20">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white sm:text-5xl lg:text-6xl">About MD-Blog</h1>
-          <p className="mt-4 text-xl text-gray-600 dark:text-gray-300">Your one-stop destination for the latest in tech, design, and development.</p>
+          <h1 className="text-5xl font-extrabold text-gray-900 dark:text-white">About DevDocks</h1>
+          <p className="mt-4 text-xl text-gray-600 dark:text-gray-300">Your one-stop destination for high-quality developer blogs and insights.</p>
         </div>
 
-        {/* Team Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">Meet the Team</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {teamMembers.map(member => (
-              <div key={member.name} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 text-center shadow-lg">
-                <img src={member.avatar} alt={member.name} className="w-24 h-24 rounded-full mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{member.name}</h3>
-                <p className="text-md text-blue-500 dark:text-blue-400 font-semibold">{member.role}</p>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">{member.bio}</p>
-                <div className="mt-4 flex justify-center space-x-4">
-                  <a href={member.social.github} className="text-gray-400 hover:text-gray-500"><Github /></a>
-                  <a href={member.social.linkedin} className="text-gray-400 hover:text-gray-500"><Linkedin /></a>
-                  <a href={member.social.twitter} className="text-gray-400 hover:text-gray-500"><Twitter /></a>
-                </div>
-              </div>
-            ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+          <div className="flex flex-col items-start">
+            <div className="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-lg mb-4">
+              <Target size={32} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <h2 className="text-3xl font-bold mb-3">Our Mission</h2>
+            <p className="text-lg text-gray-700 dark:text-gray-300">To create a vibrant community where developers can share their knowledge, learn from each other, and grow their skills. We believe in the power of open-source and collaborative learning.</p>
+          </div>
+          <div className="flex flex-col items-start">
+            <div className="flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-lg mb-4">
+              <Code size={32} className="text-purple-600 dark:text-purple-400" />
+            </div>
+            <h2 className="text-3xl font-bold mb-3">What We Do</h2>
+            <p className="text-lg text-gray-700 dark:text-gray-300">DevDocks provides a platform for developers to publish articles, tutorials, and case studies on a wide range of topics, including web development, AI, machine learning, and more.</p>
           </div>
         </div>
 
-        {/* Tech Stack Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">Our Tech Stack</h2>
-          <div className="flex flex-wrap justify-center gap-4">
-            {techStack.map(tech => (
-              <span key={tech} className="bg-blue-100 text-blue-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">{tech}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Call to Action */}
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">Join Our Community</h2>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Ready to dive in? Create an account today and start your journey with us.</p>
-          <button className="mt-8 px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 text-lg">
-            Get Started
-          </button>
+          <h2 className="text-3xl font-bold mb-8">Meet the Team</h2>
+          <div className="flex justify-center space-x-8">
+            <div className="text-center">
+              <img src="/avatars/avatar-1.png" alt="Team Member" className="w-24 h-24 rounded-full mx-auto mb-2" />
+              <h3 className="text-xl font-semibold">Alex Johnson</h3>
+              <p className="text-gray-500">Founder & CEO</p>
+            </div>
+            <div className="text-center">
+              <img src="/avatars/avatar-2.png" alt="Team Member" className="w-24 h-24 rounded-full mx-auto mb-2" />
+              <h3 className="text-xl font-semibold">Samantha Ming</h3>
+              <p className="text-gray-500">Lead Editor</p>
+            </div>
+            <div className="text-center">
+              <img src="/avatars/avatar-3.png" alt="Team Member" className="w-24 h-24 rounded-full mx-auto mb-2" />
+              <h3 className="text-xl font-semibold">John Doe</h3>
+              <p className="text-gray-500">Community Manager</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default About;

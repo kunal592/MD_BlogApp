@@ -1,33 +1,24 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LayoutProvider } from './contexts/LayoutContext'; // Import LayoutProvider
 import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import Profile from './components/Profile';
 import Home from './components/Home';
 import Login from './components/Login';
-import Dashboard from './components/Dashboard';
 import BlogDetail from './components/BlogDetail';
 import MyBlogs from './components/MyBlogs';
 import CreateEditBlog from './components/CreateEditBlog';
-import AdminLayout from './components/admin/AdminLayout';
-import AdminDashboard from './components/admin/AdminDashboard';
-import AdminUsers from './components/admin/AdminUsers';
-import AdminBlogs from './components/admin/AdminBlogs';
-import AdminComments from './components/admin/AdminComments';
-import AdminQueries from './components/admin/AdminQueries';
+import Feed from './components/Feed';
 import About from './components/About';
-import Contact from './components/Contact';
-import Notifications from './components/Notifications';
+import Footer from './components/Footer';
+import AnalyticsDashboard from './components/admin/AnalyticsDashboard';
+import ReportedContent from './components/admin/ReportedContent';
+import AdminLayout from './components/admin/AdminLayout';
 import { blogPosts, BlogPost as BlogPostType } from './data/blogPosts';
 
 function AppContent() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [currentPage, setCurrentPage] = useState('home');
-  const [selectedPost, setSelectedPost] = useState<BlogPostType | null>(blogPosts[0]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isNavOpen, setIsNavOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<BlogPostType | null>(null);
 
   const handleLogin = () => {
     setIsLoggedIn(true);
@@ -36,12 +27,17 @@ function AppContent() {
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
-    setIsNavOpen(false);
+    setSelectedPost(null);
   };
   
   const handlePostSelect = (post: BlogPostType) => {
     setSelectedPost(post);
     setCurrentPage('blog-detail');
+  };
+
+  const handleBack = () => {
+    setSelectedPost(null);
+    setCurrentPage('home');
   };
 
   if (!isLoggedIn) {
@@ -51,94 +47,57 @@ function AppContent() {
   const renderAdminContent = () => {
     let content;
     switch (currentPage) {
-      case 'admin-users':
-        content = <AdminUsers />;
+      case 'admin-analytics':
+        content = <AnalyticsDashboard />;
         break;
-      case 'admin-blogs':
-        content = <AdminBlogs />;
-        break;
-      case 'admin-comments':
-        content = <AdminComments />;
-        break;
-      case 'admin-queries':
-        content = <AdminQueries />;
+      case 'admin-reported-content':
+        content = <ReportedContent />;
         break;
       default:
-        content = <AdminDashboard />;
+        content = <AnalyticsDashboard />;
     }
     return <AdminLayout onNavigate={handleNavigate}>{content}</AdminLayout>;
   };
 
   if (currentPage.startsWith('admin')) {
-    return renderAdminContent();
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <div className="flex-grow">
+          {renderAdminContent()}
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   const renderContent = () => {
+    if (selectedPost) {
+      return <BlogDetail post={selectedPost} onBack={handleBack} />;
+    }
+
     switch (currentPage) {
       case 'home':
         return <Home onPostSelect={handlePostSelect} />;
-      case 'profile':
-        return <Profile />;
-      case 'dashboard':
-        return <Dashboard />;
       case 'my-blogs':
         return <MyBlogs />;
       case 'create-edit-blog':
         return <CreateEditBlog />;
+      case 'feed':
+        return <Feed />;
       case 'about':
         return <About />;
-      case 'contact':
-        return <Contact />;
-      case 'notifications':
-        return <Notifications />;
-      case 'blog-detail':
-        return selectedPost ? <BlogDetail post={selectedPost} /> : <Home onPostSelect={handlePostSelect} />;
-      case 'blogs':
       default:
-        return (
-          <div className="flex">
-            <div className={`${isSearchOpen ? 'block' : 'hidden lg:block'} fixed lg:static inset-y-0 left-0 z-40 lg:z-auto`}>
-              <Sidebar
-                posts={blogPosts}
-                selectedPost={selectedPost}
-                onPostSelect={handlePostSelect}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                selectedTags={selectedTags}
-                onTagToggle={() => {}}
-                isSearchOpen={isSearchOpen}
-                onSearchClose={() => setIsSearchOpen(false)}
-              />
-            </div>
-            <main className="flex-1 overflow-y-auto">
-              {selectedPost ? (
-                <BlogDetail post={selectedPost} />
-              ) : (
-                <div className="flex items-center justify-center h-96">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                      No posts found
-                    </h2>
-                  </div>
-                </div>
-              )}
-            </main>
-          </div>
-        );
+        return <Home onPostSelect={handlePostSelect} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      <Header 
-        onSearchToggle={() => setIsSearchOpen(!isSearchOpen)}
-        onProfileToggle={() => handleNavigate('profile')}
-        isProfileOpen={currentPage === 'profile'}
-        onNavToggle={() => setIsNavOpen(!isNavOpen)}
-        isNavOpen={isNavOpen}
-        onNavigate={handleNavigate}
-      />
-      {renderContent()}
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      <Header onNavigate={handleNavigate} />
+      <main className="flex-grow pt-16">
+        {renderContent()}
+      </main>
+      <Footer />
     </div>
   );
 }
@@ -146,7 +105,9 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <LayoutProvider>
+        <AppContent />
+      </LayoutProvider>
     </ThemeProvider>
   );
 }
