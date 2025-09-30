@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
-import BlogPost from './components/BlogPost';
 import Profile from './components/Profile';
 import Home from './components/Home';
 import Login from './components/Login';
@@ -18,6 +17,7 @@ import AdminComments from './components/admin/AdminComments';
 import AdminQueries from './components/admin/AdminQueries';
 import About from './components/About';
 import Contact from './components/Contact';
+import Notifications from './components/Notifications';
 import { blogPosts, BlogPost as BlogPostType } from './data/blogPosts';
 
 function AppContent() {
@@ -37,6 +37,11 @@ function AppContent() {
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
     setIsNavOpen(false);
+  };
+  
+  const handlePostSelect = (post: BlogPostType) => {
+    setSelectedPost(post);
+    setCurrentPage('blog-detail');
   };
 
   if (!isLoggedIn) {
@@ -71,13 +76,11 @@ function AppContent() {
   const renderContent = () => {
     switch (currentPage) {
       case 'home':
-        return <Home />;
+        return <Home onPostSelect={handlePostSelect} />;
       case 'profile':
         return <Profile />;
       case 'dashboard':
         return <Dashboard />;
-      case 'blog-detail':
-        return selectedPost ? <BlogDetail post={selectedPost} /> : <Home />;
       case 'my-blogs':
         return <MyBlogs />;
       case 'create-edit-blog':
@@ -86,6 +89,10 @@ function AppContent() {
         return <About />;
       case 'contact':
         return <Contact />;
+      case 'notifications':
+        return <Notifications />;
+      case 'blog-detail':
+        return selectedPost ? <BlogDetail post={selectedPost} /> : <Home onPostSelect={handlePostSelect} />;
       case 'blogs':
       default:
         return (
@@ -94,10 +101,7 @@ function AppContent() {
               <Sidebar
                 posts={blogPosts}
                 selectedPost={selectedPost}
-                onPostSelect={(post) => {
-                  setSelectedPost(post);
-                  setCurrentPage('blog-detail');
-                }}
+                onPostSelect={handlePostSelect}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 selectedTags={selectedTags}
@@ -108,7 +112,7 @@ function AppContent() {
             </div>
             <main className="flex-1 overflow-y-auto">
               {selectedPost ? (
-                <BlogPost post={selectedPost} />
+                <BlogDetail post={selectedPost} />
               ) : (
                 <div className="flex items-center justify-center h-96">
                   <div className="text-center">

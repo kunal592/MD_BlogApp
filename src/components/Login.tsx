@@ -8,7 +8,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   return (
     <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">DevBlog</h1>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">DevDocks</h1>
         <button 
           className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 border border-gray-200 dark:border-gray-700"
           onClick={onLogin}

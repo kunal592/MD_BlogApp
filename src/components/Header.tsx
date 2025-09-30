@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun, Search, User, Menu, X, HomeIcon, BookOpen, UserCircle } from 'lucide-react';
+import { Moon, Sun, Search, User, Menu, X, HomeIcon, BookOpen, UserCircle, Bell, Info, Mail } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface HeaderProps {
@@ -24,7 +24,8 @@ const Header: React.FC<HeaderProps> = ({
   const navItems = [
     { name: 'Home', icon: HomeIcon, page: 'home' },
     { name: 'Blogs', icon: BookOpen, page: 'blogs' },
-    { name: 'Profile', icon: UserCircle, page: 'profile' },
+    { name: 'About', icon: Info, page: 'about' },
+    { name: 'Contact', icon: Mail, page: 'contact' },
   ];
 
   return (
@@ -40,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({
             >
               {isNavOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">DevBlog</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">DevDocks</h1>
           </div>
 
           {/* Desktop Navigation */}
@@ -64,6 +65,14 @@ const Header: React.FC<HeaderProps> = ({
               aria-label="Toggle search"
             >
               <Search size={20} />
+            </button>
+
+            <button
+              onClick={() => onNavigate('notifications')}
+              className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle notifications"
+            >
+              <Bell size={20} />
             </button>
 
             <button
@@ -106,6 +115,16 @@ const Header: React.FC<HeaderProps> = ({
                 {item.name}
               </button>
             ))}
+             <button
+                onClick={() => {
+                  onNavigate('profile');
+                  onNavToggle();
+                }}
+                className="w-full flex items-center px-4 py-3 rounded-lg text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <UserCircle size={20} className="mr-3" />
+                Profile
+              </button>
           </nav>
         </div>
       )}
