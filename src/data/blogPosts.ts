@@ -10,6 +10,7 @@ export interface BlogPost {
   content: string;
   readingTime: number;
   slug: string;
+  imageUrl: string; // Added imageUrl property
 }
 
 const calculateReadingTime = (content: string): number => {
@@ -22,6 +23,7 @@ const calculateReadingTime = (content: string): number => {
 const samplePosts = [
   {
     id: '1',
+    imageUrl: 'https://picsum.photos/seed/react/800/600',
     markdown: `---
 title: "Getting Started with React and TypeScript"
 date: "2024-01-15"
@@ -86,6 +88,7 @@ This foundation will set you up for success with TypeScript and React!`
   },
   {
     id: '2',
+    imageUrl: 'https://picsum.photos/seed/css/800/600',
     markdown: `---
 title: "Mastering CSS Grid Layout"
 date: "2024-01-10"
@@ -172,6 +175,7 @@ Grid Layout opens up endless possibilities for creative and functional web layou
   },
   {
     id: '3',
+    imageUrl: 'https://picsum.photos/seed/js/800/600',
     markdown: `---
 title: "Modern JavaScript Features You Should Know"
 date: "2024-01-05"
@@ -293,6 +297,7 @@ export const blogPosts: BlogPost[] = samplePosts.map(post => {
     description: parsed.data.description,
     content: parsed.content,
     readingTime,
-    slug: parsed.data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    slug: parsed.data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    imageUrl: post.imageUrl
   };
 });

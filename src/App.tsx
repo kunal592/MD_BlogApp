@@ -1,109 +1,140 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import BlogPost from './components/BlogPost';
 import Profile from './components/Profile';
+import Home from './components/Home';
+import Login from './components/Login';
+import Dashboard from './components/Dashboard';
+import BlogDetail from './components/BlogDetail';
+import MyBlogs from './components/MyBlogs';
+import CreateEditBlog from './components/CreateEditBlog';
+import AdminLayout from './components/admin/AdminLayout';
+import AdminDashboard from './components/admin/AdminDashboard';
+import AdminUsers from './components/admin/AdminUsers';
+import AdminBlogs from './components/admin/AdminBlogs';
+import AdminComments from './components/admin/AdminComments';
+import AdminQueries from './components/admin/AdminQueries';
+import About from './components/About';
+import Contact from './components/Contact';
 import { blogPosts, BlogPost as BlogPostType } from './data/blogPosts';
 
 function AppContent() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentPage, setCurrentPage] = useState('home');
   const [selectedPost, setSelectedPost] = useState<BlogPostType | null>(blogPosts[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
-  // Filter posts based on search and tags
-  const filteredPosts = useMemo(() => {
-    return blogPosts.filter(post => {
-      const matchesSearch = searchQuery === '' || 
-        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesTags = selectedTags.length === 0 || 
-        selectedTags.some(tag => post.tags.includes(tag));
-      
-      return matchesSearch && matchesTags;
-    });
-  }, [searchQuery, selectedTags]);
-
-  const handleTagToggle = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    setCurrentPage('home');
   };
 
-  const handlePostSelect = (post: BlogPostType) => {
-    setSelectedPost(post);
-    setIsProfileOpen(false);
+  const handleNavigate = (page: string) => {
+    setCurrentPage(page);
+    setIsNavOpen(false);
   };
 
-  const handleProfileToggle = () => {
-    setIsProfileOpen(!isProfileOpen);
+  if (!isLoggedIn) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  const renderAdminContent = () => {
+    let content;
+    switch (currentPage) {
+      case 'admin-users':
+        content = <AdminUsers />;
+        break;
+      case 'admin-blogs':
+        content = <AdminBlogs />;
+        break;
+      case 'admin-comments':
+        content = <AdminComments />;
+        break;
+      case 'admin-queries':
+        content = <AdminQueries />;
+        break;
+      default:
+        content = <AdminDashboard />;
+    }
+    return <AdminLayout onNavigate={handleNavigate}>{content}</AdminLayout>;
   };
 
-  const handleSearchToggle = () => {
-    setIsSearchOpen(!isSearchOpen);
-  };
+  if (currentPage.startsWith('admin')) {
+    return renderAdminContent();
+  }
 
-  const handleSearchClose = () => {
-    setIsSearchOpen(false);
+  const renderContent = () => {
+    switch (currentPage) {
+      case 'home':
+        return <Home />;
+      case 'profile':
+        return <Profile />;
+      case 'dashboard':
+        return <Dashboard />;
+      case 'blog-detail':
+        return selectedPost ? <BlogDetail post={selectedPost} /> : <Home />;
+      case 'my-blogs':
+        return <MyBlogs />;
+      case 'create-edit-blog':
+        return <CreateEditBlog />;
+      case 'about':
+        return <About />;
+      case 'contact':
+        return <Contact />;
+      case 'blogs':
+      default:
+        return (
+          <div className="flex">
+            <div className={`${isSearchOpen ? 'block' : 'hidden lg:block'} fixed lg:static inset-y-0 left-0 z-40 lg:z-auto`}>
+              <Sidebar
+                posts={blogPosts}
+                selectedPost={selectedPost}
+                onPostSelect={(post) => {
+                  setSelectedPost(post);
+                  setCurrentPage('blog-detail');
+                }}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedTags={selectedTags}
+                onTagToggle={() => {}}
+                isSearchOpen={isSearchOpen}
+                onSearchClose={() => setIsSearchOpen(false)}
+              />
+            </div>
+            <main className="flex-1 overflow-y-auto">
+              {selectedPost ? (
+                <BlogPost post={selectedPost} />
+              ) : (
+                <div className="flex items-center justify-center h-96">
+                  <div className="text-center">
+                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                      No posts found
+                    </h2>
+                  </div>
+                </div>
+              )}
+            </main>
+          </div>
+        );
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Header 
-        onSearchToggle={handleSearchToggle}
-        onProfileToggle={handleProfileToggle}
-        isProfileOpen={isProfileOpen}
+        onSearchToggle={() => setIsSearchOpen(!isSearchOpen)}
+        onProfileToggle={() => handleNavigate('profile')}
+        isProfileOpen={currentPage === 'profile'}
+        onNavToggle={() => setIsNavOpen(!isNavOpen)}
+        isNavOpen={isNavOpen}
+        onNavigate={handleNavigate}
       />
-      
-      <div className="flex">
-        <div className={`${isSearchOpen ? 'block' : 'hidden lg:block'} fixed lg:static inset-y-0 left-0 z-40 lg:z-auto`}>
-          <Sidebar
-            posts={filteredPosts}
-            selectedPost={selectedPost}
-            onPostSelect={handlePostSelect}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            selectedTags={selectedTags}
-            onTagToggle={handleTagToggle}
-            isSearchOpen={isSearchOpen}
-            onSearchClose={handleSearchClose}
-          />
-        </div>
-        
-        <main className="flex-1 overflow-y-auto">
-          {isProfileOpen ? (
-            <Profile />
-          ) : selectedPost ? (
-            <BlogPost post={selectedPost} />
-          ) : (
-            <div className="flex items-center justify-center h-96">
-              <div className="text-center">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                  No posts found
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Try adjusting your search or filter criteria
-                </p>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
-      
-      {/* Mobile overlay */}
-      {isSearchOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={handleSearchClose}
-        />
-      )}
+      {renderContent()}
     </div>
   );
 }
