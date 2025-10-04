@@ -378,3 +378,31 @@ export const moderateComment = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to moderate comment' });
   }
 };
+
+
+
+
+const trendingTags = await prisma.blog.groupBy({
+  by: ['tags'],
+  _count: true,
+  orderBy: { _count: { _all: 'desc' } },
+  take: 5,
+});
+
+res.status(200).json({
+  success: true,
+  data: {
+    overview: {
+      totalUsers,
+      totalBlogs,
+      publishedBlogs,
+      draftBlogs,
+      totalLikes,
+      totalBookmarks,
+      totalComments,
+      userGrowth: Math.round(userGrowth * 100) / 100
+    },
+    recentActivity: { recentUsers, recentBlogs, topBlogs },
+    trendingTags
+  }
+});

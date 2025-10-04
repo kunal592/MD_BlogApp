@@ -1,3 +1,7 @@
+// -------------------------------------
+// Prisma Schema for DevBlog (Fixed + Validated)
+// -------------------------------------
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,126 +11,142 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// -------------------------------------
+// User Model
+// -------------------------------------
 model User {
   id        String   @id @default(uuid())
-  googleId  String?  @unique            // Google OAuth ID
+  googleId  String?  @unique
   email     String   @unique
   name      String
   avatar    String?
-  bio       String?
+  bio       String?  @db.Text
   role      Role     @default(USER)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  blogs                 Blog[]
+  // Relations
+  blogs                 Blog[]           @relation("UserBlogs")
   likes                 Like[]
   bookmarks             Bookmark[]
-  followers             Follows[]      @relation("followers")
-  following             Follows[]      @relation("following")
   comments              Comment[]
-  commentLikes          CommentLike[]
-  sentNotifications     Notification[] @relation("sentNotifications")
-  receivedNotifications Notification[] @relation("receivedNotifications")
+  followers             Follows[]        @relation("followers")
+  following             Follows[]        @relation("following")
+  sentNotifications     Notification[]   @relation("sentNotifications")
+  receivedNotifications Notification[]   @relation("receivedNotifications")
+  reports               Report[]         @relation("UserReports")
+  contactRequests       ContactRequest[]
+  commentLikes          CommentLike[] // ✅ Added missing inverse relation
 }
 
+// -------------------------------------
+// Blog Model
+// -------------------------------------
 model Blog {
   id          String   @id @default(uuid())
   title       String
   slug        String   @unique
-  content     String
-  excerpt     String?    // short description
-  summary     String?    // AI-generated summary
-  coverImage  String?    // blog cover image
-  tags        String[]   @default([])
+  content     String   @db.Text
+  excerpt     String?
+  summary     String?
+  coverImage  String?
+  tags        String[]
+  readTime    Int
+  viewCount   Int      @default(0)
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  isPublished Boolean   @default(false) // draft vs published
-  isFeatured  Boolean   @default(false) // admin can feature blogs
-  readTime    Int?      // estimated reading time
-  viewCount   Int       @default(0)
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  author   User   @relation(fields: [authorId], references: [id])
-  authorId String
-
+  author    User       @relation("UserBlogs", fields: [authorId], references: [id])
+  authorId  String
   likes     Like[]
   bookmarks Bookmark[]
   comments  Comment[]
 }
 
-model Comment {
-  id        String   @id @default(uuid())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isApproved Boolean @default(true)
+// -------------------------------------
+// Follows (User ↔ User self-relation)
+// -------------------------------------
+model Follows {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
 
-  blog   Blog   @relation(fields: [blogId], references: [id])
-  blogId String
+  follower  User @relation("following", fields: [followerId], references: [id])
+  following User @relation("followers", fields: [followingId], references: [id])
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
-
-  parentId String?
-  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies  Comment[] @relation("CommentReplies")
-
-  likes    CommentLike[]
+  @@id([followerId, followingId])
 }
 
-model CommentLike {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-
-  comment   Comment @relation(fields: [commentId], references: [id])
-  commentId String
-
-  user      User    @relation(fields: [userId], references: [id])
-  userId    String
-
-  @@unique([userId, commentId])
-}
-
+// -------------------------------------
+// Likes & Bookmarks
+// -------------------------------------
 model Like {
   id        String   @id @default(uuid())
+  userId    String
+  blogId    String
   createdAt DateTime @default(now())
 
-  blog   Blog   @relation(fields: [blogId], references: [id])
-  blogId String
+  user User @relation(fields: [userId], references: [id])
+  blog Blog @relation(fields: [blogId], references: [id])
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
+  @@unique([userId, blogId])
 }
 
 model Bookmark {
   id        String   @id @default(uuid())
+  userId    String
+  blogId    String
   createdAt DateTime @default(now())
 
-  blog   Blog   @relation(fields: [blogId], references: [id])
-  blogId String
+  user User @relation(fields: [userId], references: [id])
+  blog Blog @relation(fields: [blogId], references: [id])
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
+  @@unique([userId, blogId])
 }
 
-model Follows {
-  followerId  String
-  followingId String
+// -------------------------------------
+// Comments + Comment Likes
+// -------------------------------------
+model Comment {
+  id         String   @id @default(uuid())
+  content    String
+  createdAt  DateTime @default(now())
+  isApproved Boolean  @default(true)
+  parentId   String?
+  blogId     String
+  userId     String
 
-  follower  User @relation("followers", fields: [followerId], references: [id])
-  following User @relation("following", fields: [followingId], references: [id])
-
-  @@id([followerId, followingId])
+  blog    Blog          @relation(fields: [blogId], references: [id])
+  user    User          @relation(fields: [userId], references: [id])
+  parent  Comment?      @relation("CommentThread", fields: [parentId], references: [id])
+  replies Comment[]     @relation("CommentThread")
+  likes   CommentLike[]
 }
-model Notification {
+
+model CommentLike {
   id        String   @id @default(uuid())
-  type      String
-  message   String
-  read      Boolean  @default(false)   // <-- field is `read`, not `isRead`
+  userId    String
+  commentId String
   createdAt DateTime @default(now())
 
+  user    User    @relation(fields: [userId], references: [id])
+  comment Comment @relation(fields: [commentId], references: [id])
+
+  @@unique([userId, commentId])
+}
+
+// -------------------------------------
+// Notifications
+// -------------------------------------
+model Notification {
+  id          String   @id @default(uuid())
+  type        String
+  message     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
   senderId    String
   recipientId String
 
@@ -134,17 +154,40 @@ model Notification {
   recipient User @relation("receivedNotifications", fields: [recipientId], references: [id])
 }
 
+// -------------------------------------
+// Contact Requests
+// -------------------------------------
+model ContactRequest {
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  message    String   @db.Text
+  isResolved Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+}
+
+// -------------------------------------
+// 🆕 Reports (Moderation System)
+// -------------------------------------
+model Report {
+  id          String   @id @default(uuid())
+  contentType String // "blog" | "comment" | "user"
+  contentId   String
+  reason      String
+  createdAt   DateTime @default(now())
+  resolved    Boolean  @default(false)
+
+  reporterId String
+  reporter   User   @relation("UserReports", fields: [reporterId], references: [id])
+}
+
+// -------------------------------------
+// Enums
+// -------------------------------------
 enum Role {
   USER
   ADMIN
-}
-
-model ContactRequest {
-  id        String   @id @default(uuid())
-  name      String
-  email     String
-  message   String
-  isResolved Boolean  @default(false)
-  createdAt DateTime @default(now())
 }

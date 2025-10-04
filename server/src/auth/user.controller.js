@@ -1,3 +1,4 @@
+// server/src/auth/user.controller.js
 import prisma from '../prisma.js';
 
 /**
@@ -35,15 +36,30 @@ export const followUser = async (req, res) => {
     const { id } = req.params;
     const followerId = req.user?.id;
 
+    if (!followerId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
     if (id === followerId) {
       return res.status(400).json({ success: false, message: "You can't follow yourself" });
+    }
+
+    // Prevent duplicate follows
+    const existingFollow = await prisma.follows.findUnique({
+      where: {
+        followerId_followingId: { followerId, followingId: id },
+      },
+    });
+
+    if (existingFollow) {
+      return res.status(400).json({ success: false, message: 'Already following this user' });
     }
 
     await prisma.follows.create({
       data: { followerId, followingId: id },
     });
 
-    res.json({ success: true, message: 'Followed user successfully' });
+    res.json({ success: true, message: 'Followed successfully' });
   } catch (error) {
     console.error('❌ followUser failed:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -58,13 +74,17 @@ export const unfollowUser = async (req, res) => {
     const { id } = req.params;
     const followerId = req.user?.id;
 
+    if (!followerId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
     await prisma.follows.delete({
       where: {
         followerId_followingId: { followerId, followingId: id },
       },
     });
 
-    res.json({ success: true, message: 'Unfollowed user successfully' });
+    res.json({ success: true, message: 'Unfollowed successfully' });
   } catch (error) {
     console.error('❌ unfollowUser failed:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -72,207 +92,49 @@ export const unfollowUser = async (req, res) => {
 };
 
 /**
- * User Dashboard
+ * Get followers list
  */
-export const getDashboard = async (req, res) => {
+export const getFollowers = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const { id } = req.params;
 
-    const blogs = await prisma.blog.findMany({
-      where: { authorId: userId },
-      include: { _count: { select: { likes: true, bookmarks: true, comments: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    });
-
-    const totalViews = await prisma.blog.aggregate({
-      where: { authorId: userId },
-      _sum: { viewCount: true },
+    const followers = await prisma.follows.findMany({
+      where: { followingId: id },
+      include: {
+        follower: { select: { id: true, name: true, avatar: true } },
+      },
     });
 
     res.json({
       success: true,
-      data: {
-        stats: {
-          blogsPublished: await prisma.blog.count({ where: { authorId: userId } }),
-          totalViews: totalViews._sum.viewCount || 0,
-          likesReceived: blogs.reduce((acc, b) => acc + b._count.likes, 0),
-          bookmarksReceived: blogs.reduce((acc, b) => acc + b._count.bookmarks, 0),
-          blogsLiked: await prisma.like.count({ where: { userId } }),
-          blogsBookmarked: await prisma.bookmark.count({ where: { userId } }),
-        },
-        recentBlogs: blogs,
-        recentLikes: await prisma.like.findMany({
-          where: { userId },
-          include: { blog: true },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        }),
-        recentBookmarks: await prisma.bookmark.findMany({
-          where: { userId },
-          include: { blog: true },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        }),
-      },
+      data: followers.map((f) => f.follower),
     });
-  } catch (err) {
-    console.error('❌ getDashboard failed:', err);
-    res.status(500).json({ success: false, message: 'Failed to load dashboard' });
-  }
-};
-
-/**
- * User Stats
- */
-export const getStats = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const blogsPublished = await prisma.blog.count({ where: { authorId: userId } });
-    const totalViews = await prisma.blog.aggregate({
-      where: { authorId: userId },
-      _sum: { viewCount: true },
-    });
-
-    const likesReceived = await prisma.like.count({ where: { blog: { authorId: userId } } });
-    const bookmarksReceived = await prisma.bookmark.count({ where: { blog: { authorId: userId } } });
-    const blogsLiked = await prisma.like.count({ where: { userId } });
-    const blogsBookmarked = await prisma.bookmark.count({ where: { userId } });
-
-    res.json({
-      success: true,
-      data: {
-        blogsPublished,
-        totalViews: totalViews._sum.viewCount || 0,
-        likesReceived,
-        bookmarksReceived,
-        blogsLiked,
-        blogsBookmarked,
-      },
-    });
-  } catch (err) {
-    console.error('❌ getStats failed:', err);
-    res.status(500).json({ success: false, message: 'Failed to load stats' });
-  }
-};
-
-/**
- * Liked Blogs (with pagination)
- */
-export const getLikedBlogs = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const [likes, total] = await Promise.all([
-      prisma.like.findMany({
-        where: { userId },
-        include: {
-          blog: {
-            include: {
-              author: { select: { id: true, name: true, avatar: true } },
-              _count: { select: { likes: true, bookmarks: true, comments: true } },
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.like.count({ where: { userId } }),
-    ]);
-
-    const blogs = likes.map((l) => l.blog);
-
-    res.json({
-      success: true,
-      data: {
-        blogs,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-        },
-      },
-    });
-  } catch (err) {
-    console.error('❌ getLikedBlogs failed:', err);
-    res.status(500).json({ success: false, message: 'Failed to load liked blogs' });
-  }
-};
-
-/**
- * Bookmarked Blogs (with pagination)
- */
-export const getBookmarkedBlogs = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const [bookmarks, total] = await Promise.all([
-      prisma.bookmark.findMany({
-        where: { userId },
-        include: {
-          blog: {
-            include: {
-              author: { select: { id: true, name: true, avatar: true } },
-              _count: { select: { likes: true, bookmarks: true, comments: true } },
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.bookmark.count({ where: { userId } }),
-    ]);
-
-    const blogs = bookmarks.map((b) => b.blog);
-
-    res.json({
-      success: true,
-      data: {
-        blogs,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-        },
-      },
-    });
-  } catch (err) {
-    console.error('❌ getBookmarkedBlogs failed:', err);
-    res.status(500).json({ success: false, message: 'Failed to load bookmarked blogs' });
-  }
-};
-
-/**
- * Update current user's profile
- */
-export const updateMe = async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    const { name, avatar } = req.body;
-
-    if (!name?.trim()) {
-      return res.status(400).json({ success: false, message: 'Name is required' });
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { name, avatar: avatar || null },
-    });
-
-    res.json({ success: true, data: { user: updatedUser } });
   } catch (error) {
-    console.error('❌ updateMe failed:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('❌ getFollowers failed:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch followers' });
+  }
+};
+
+/**
+ * Get following list
+ */
+export const getFollowing = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const following = await prisma.follows.findMany({
+      where: { followerId: id },
+      include: {
+        following: { select: { id: true, name: true, avatar: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: following.map((f) => f.following),
+    });
+  } catch (error) {
+    console.error('❌ getFollowing failed:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch following' });
   }
 };

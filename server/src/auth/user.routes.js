@@ -4,6 +4,8 @@ import {
   getUserById,
   followUser,
   unfollowUser,
+  getFollowers,
+  getFollowing,
   getDashboard,
   getStats,
   getLikedBlogs,
@@ -13,28 +15,18 @@ import {
 
 const router = Router();
 
-// ---------------------
-// 🔒 Protected routes
-// ---------------------
-
-// Dashboard + Stats
+// Protected
 router.get('/dashboard', authenticateGoogle, getDashboard);
 router.get('/stats', authenticateGoogle, getStats);
-
-// User interactions
 router.get('/likes', authenticateGoogle, getLikedBlogs);
 router.get('/bookmarks', authenticateGoogle, getBookmarkedBlogs);
-
-// Profile update
 router.put('/profile', authenticateGoogle, updateMe);
-
-// Follow system
 router.post('/:id/follow', authenticateGoogle, followUser);
 router.post('/:id/unfollow', authenticateGoogle, unfollowUser);
 
-// ---------------------
-// 🌍 Public routes
-// ---------------------
+// Public
+router.get('/:id/followers', getFollowers);
+router.get('/:id/following', getFollowing);
 router.get('/:id', getUserById);
 
 export { router as userRoutes };

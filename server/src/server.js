@@ -17,6 +17,7 @@ import { blogRoutes } from './blog/blog.routes.js';
 import { commentRoutes } from './comment/comment.routes.js';
 import { contactRoutes } from './notification/contact.routes.js';
 import { notificationRoutes } from './notification/notification.routes.js';
+import { reportRoutes } from './report/report.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5003;
@@ -48,6 +49,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/blogs/:slug/comments', commentRoutes);
+app.use('/api/reports', reportRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 

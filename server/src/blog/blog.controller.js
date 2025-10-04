@@ -141,7 +141,6 @@ export const getBlogBySlug = async (req, res) => {
     return res.status(404).json({ success: false, message: "Blog not found" });
   }
 
-  // ✅ Fix: increment viewCount properly
   await prisma.blog.update({
     where: { id: blog.id },
     data: { viewCount: { increment: 1 } },
@@ -211,9 +210,7 @@ export const createBlog = async (req, res) => {
     },
   });
 
-  res
-    .status(201)
-    .json({ success: true, message: "Blog created", data: { blog } });
+  res.status(201).json({ success: true, message: "Blog created", data: { blog } });
 };
 
 /**
@@ -221,8 +218,7 @@ export const createBlog = async (req, res) => {
  */
 export const updateBlog = async (req, res) => {
   const { id } = req.params;
-  const { title, content, excerpt, coverImage, tags, isPublished, isFeatured } =
-    req.body;
+  const { title, content, excerpt, coverImage, tags, isPublished, isFeatured } = req.body;
 
   const updateData = {};
   if (title !== undefined) {
@@ -238,8 +234,7 @@ export const updateBlog = async (req, res) => {
   if (coverImage !== undefined) updateData.coverImage = coverImage;
   if (tags !== undefined) updateData.tags = tags;
   if (isPublished !== undefined) updateData.isPublished = isPublished;
-  if (isFeatured !== undefined && req.user.role === "ADMIN")
-    updateData.isFeatured = isFeatured;
+  if (isFeatured !== undefined && req.user.role === "ADMIN") updateData.isFeatured = isFeatured;
 
   const blog = await prisma.blog.update({
     where: { id },
@@ -262,7 +257,7 @@ export const deleteBlog = async (req, res) => {
 };
 
 /**
- * Like / Unlike blog (with notification)
+ * Like / Unlike blog
  */
 export const toggleLike = async (req, res) => {
   const { id: blogId } = req.params;
@@ -330,15 +325,11 @@ export const toggleBookmark = async (req, res) => {
     message = "Blog bookmarked";
   }
 
-  res.json({
-    success: true,
-    message,
-    data: { bookmarked: !existing },
-  });
+  res.json({ success: true, message, data: { bookmarked: !existing } });
 };
 
 /**
- * Get my blogs (auth)
+ * Get my blogs
  */
 export const getMyBlogs = async (req, res) => {
   const { page = 1, limit = 10, status } = req.query;
@@ -406,4 +397,77 @@ export const getComments = async (req, res) => {
   });
 
   res.json({ success: true, data: { comments } });
+};
+
+/**
+ * 🆕 Feed from followed authors
+ */
+export const getFeed = async (req, res) => {
+  const followingIds = (
+    await prisma.follows.findMany({
+      where: { followerId: req.user.id },
+      select: { followingId: true },
+    })
+  ).map((f) => f.followingId);
+
+  const blogs = await prisma.blog.findMany({
+    where: { authorId: { in: followingIds }, isPublished: true },
+    include: {
+      author: { select: { id: true, name: true, avatar: true } },
+      _count: { select: { likes: true, bookmarks: true, comments: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  res.json({ success: true, data: blogs });
+};
+
+/**
+ * 🆕 Publish/Unpublish blog
+ */
+export const publishBlog = async (req, res) => {
+  const blog = await prisma.blog.update({
+    where: { id: req.params.id },
+    data: { isPublished: true },
+  });
+  res.json({ success: true, message: "Blog published", data: blog });
+};
+
+export const unpublishBlog = async (req, res) => {
+  const blog = await prisma.blog.update({
+    where: { id: req.params.id },
+    data: { isPublished: false },
+  });
+  res.json({ success: true, message: "Blog moved to draft", data: blog });
+};
+
+/**
+ * 🆕 Manual AI summarizer
+ */
+export const summarizeBlog = async (req, res) => {
+  const { content } = req.body;
+  if (!content)
+    return res
+      .status(400)
+      .json({ success: false, message: "Content required" });
+
+  const summary = await generateSummary(content);
+  res.json({ success: true, data: { summary } });
+};
+
+/**
+ * 🆕 Trending blogs
+ */
+export const getTrending = async (req, res) => {
+  const blogs = await prisma.blog.findMany({
+    where: { isPublished: true },
+    orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
+    take: 10,
+    include: {
+      author: { select: { id: true, name: true, avatar: true } },
+      _count: { select: { likes: true, bookmarks: true, comments: true } },
+    },
+  });
+
+  res.json({ success: true, data: blogs });
 };
