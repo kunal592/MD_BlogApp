@@ -1,0 +1,60 @@
+const setTokenCookies = (res, accessToken, refreshToken) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/'
+  };
+
+  res.cookie('accessToken', accessToken, {
+    ...cookieOptions,
+    maxAge: 15 * 60 * 1000 // 15 minutes
+  });
+
+  res.cookie('refreshToken', refreshToken, {
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+};
+
+
+
+
+
+//limiter
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 150, // Limit each IP to 100 requests per windowMs
+  message: {
+    error: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use(limiter);
+
+//--/me
+router.get('/me', authenticateJWT, asyncHandler(async (req, res) => {
+  res.status(200).json({
+    success: true,
+    user: req.user
+  });
+}));
+
+
+
+
+backend exposes:
+
+GET /api/users/:userId → public profile
+
+PUT /api/users/profile → update logged-in user’s profile (name, avatar, bio)
+
+POST /api/users/:userId/follow → follow
+
+DELETE /api/users/:userId/unfollow → unfollow
+
+GET /api/users/likes → liked blogs
+
+GET /api/users/bookmarks → bookmarked blogs
